@@ -259,12 +259,19 @@ class TextDataset(data.Dataset):
             embedding_filename = '/char-CNN-GRU-embeddings.pickle'
         elif embedding_type == 'skip-thought':
             embedding_filename = '/skip-thought-embeddings.pickle'
+        elif embedding_type == 'infersent':
+            embedding_filename = '/embeddings.pkl'
 
         with open(data_dir + embedding_filename, 'rb') as f:
             embeddings = pickle.load(f)
-            embeddings = np.array(embeddings)
+#            embeddings = np.array(embeddings)
+            if embedding_type == 'infersent':
+#                embeddings = np.array([embeddings[key] for key in embeddings.keys()])
+                 pass
+            else:
+                embeddings = np.array(embeddings)
             # embedding_shape = [embeddings.shape[-1]]
-            print('embeddings: ', embeddings.shape)
+            #print('embeddings: ', embeddings.shape)
         return embeddings
 
     def load_class_id(self, data_dir, total_num):
@@ -291,7 +298,13 @@ class TextDataset(data.Dataset):
             bbox = None
             data_dir = self.data_dir
         # captions = self.captions[key]
-        embeddings = self.embeddings[index, :, :]
+#        print('SHAPE',self.embeddings.shape)
+        if(cfg.EMBEDDING_TYPE=='infersent'):
+            if('/' in key):
+               key = key.split('/')[1]
+            embeddings = self.embeddings[key][:,:]
+        else:
+            embeddings = self.embeddings[index,:,:]
         img_name = '%s/images/%s.jpg' % (data_dir, key)
         imgs = get_imgs(img_name, self.imsize,
                         bbox, self.transform, normalize=self.norm)
@@ -325,7 +338,12 @@ class TextDataset(data.Dataset):
             bbox = None
             data_dir = self.data_dir
         # captions = self.captions[key]
-        embeddings = self.embeddings[index, :, :]
+        if(cfg.EMBEDDING_TYPE=='infersent'):
+            if('/' in key):
+                key = key.split('/')[1]
+            embeddings = self.embeddings[key][:, :]
+        else:
+            embeddings = self.embeddings[index,:,:]
         img_name = '%s/images/%s.jpg' % (data_dir, key)
         imgs = get_imgs(img_name, self.imsize,
                         bbox, self.transform, normalize=self.norm)

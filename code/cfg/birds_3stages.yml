@@ -1,23 +1,26 @@
-CONFIG_NAME: '3stages'
+CONFIG_NAME: '3stages_cnnrnn_work'
 
 DATASET_NAME: 'birds'
 EMBEDDING_TYPE: 'cnn-rnn'
-DATA_DIR: '../data/birds'
+DATA_DIR: '/mnt/nfs/work1/696ds-s18/srideepikaja/data/birds'
+#DATA_DIR: '../data/birds'
 GPU_ID: '0'
 WORKERS: 4
 
 
 TREE:
-    BRANCH_NUM: 3
+    BRANCH_NUM: 4
 
 
 TRAIN:
     FLAG: True
-    NET_G: ''  # '../output/birds_3stages/Model/netG_epoch_700.pth'
-    NET_D: ''  # '../output/birds_3stages/Model/netD'
-    BATCH_SIZE: 24
+    #NET_G: '../output/birds_3stages_2018_04_25_01_19_39/Model/netG_35000.pth'  # '../output/birds_3stages/Model/netG_epoch_700.pth'
+    #NET_D: '../output/birds_3stages_2018_04_25_01_19_39/Model/netD'  # '../output/birds_3stages/Model/netD'
+    NET_G: ''
+    NET_D: ''
+    BATCH_SIZE: 6
     MAX_EPOCH: 600
-    SNAPSHOT_INTERVAL: 2000
+    SNAPSHOT_INTERVAL: 1000
     DISCRIMINATOR_LR: 0.0002
     GENERATOR_LR: 0.0002
     COEFF:

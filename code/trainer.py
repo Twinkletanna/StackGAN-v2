@@ -710,6 +710,9 @@ class condGANTrainer(object):
                 # (1) Generate fake images
                 ######################################################
                 noise.data.normal_(0, 1)
+                #noise = noise.cuda()
+                #self.txt_embedding = self.txt_embedding.cuda()
+               # print(type(noise),type(self.txt_embedding),'noise,test')
                 self.fake_imgs, self.mu, self.logvar = \
                     self.netG(noise, self.txt_embedding)
 
@@ -851,7 +854,8 @@ class condGANTrainer(object):
             nz = cfg.GAN.Z_DIM
             noise = Variable(torch.FloatTensor(self.batch_size, nz))
             if cfg.CUDA:
-                netG.cuda()
+#removing .cuda() to debug
+                netG = netG.cuda()
                 noise = noise.cuda()
 
             # switch to evaluate mode
@@ -860,6 +864,7 @@ class condGANTrainer(object):
                 imgs, t_embeddings, filenames = data
                 if cfg.CUDA:
                     t_embeddings = Variable(t_embeddings).cuda()
+#Removing .cuda() to debug
                 else:
                     t_embeddings = Variable(t_embeddings)
                 # print(t_embeddings[:, 0, :], t_embeddings.size(1))
@@ -871,6 +876,7 @@ class condGANTrainer(object):
 
                 fake_img_list = []
                 for i in range(embedding_dim):
+#adding .cpu() to debug below t_embeddings
                     fake_imgs, _, _ = netG(noise, t_embeddings[:, i, :])
                     if cfg.TEST.B_EXAMPLE:
                         # fake_img_list.append(fake_imgs[0].data.cpu())

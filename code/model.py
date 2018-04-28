@@ -124,7 +124,7 @@ class CA_NET(nn.Module):
             eps = torch.cuda.FloatTensor(std.size()).normal_()
         else:
             eps = torch.FloatTensor(std.size()).normal_()
-        eps = Variable(eps)
+        eps = Variable(eps).cuda()
         return eps.mul(std).add_(mu)
 
     def forward(self, text_embedding):
@@ -177,10 +177,21 @@ class INIT_STAGE_G(nn.Module):
         return out_code
 
 
+def secondupBlock(in_planes, out_planes):
+    block = nn.Sequential(
+        nn.Upsample(scale_factor=4, mode='nearest'),
+        conv3x3(in_planes, out_planes * 2),
+        nn.BatchNorm2d(out_planes * 2),
+        GLU()
+    )
+    return block
+
+
 class NEXT_STAGE_G(nn.Module):
-    def __init__(self, ngf, num_residual=cfg.GAN.R_NUM):
+    def __init__(self, ngf, num_residual=cfg.GAN.R_NUM, extra=False):
         super(NEXT_STAGE_G, self).__init__()
         self.gf_dim = ngf
+        self.extra = extra
         if cfg.GAN.B_CONDITION:
             self.ef_dim = cfg.GAN.EMBEDDING_DIM
         else:
@@ -213,7 +224,9 @@ class NEXT_STAGE_G(nn.Module):
         out_code = self.residual(out_code)
         # state size ngf/2 x 2in_size x 2in_size
         out_code = self.upsample(out_code)
-
+    #    if(self.extra):
+     #        self.secondupsample = secondupBlock(self.gf_dim/2, self.gf_dim/2//2)
+      #       out_code = self.secondupsample(out_code)
         return out_code
 
 
@@ -248,7 +261,7 @@ class G_NET(nn.Module):
             self.h_net2 = NEXT_STAGE_G(self.gf_dim)
             self.img_net2 = GET_IMAGE_G(self.gf_dim // 2)
         if cfg.TREE.BRANCH_NUM > 2:
-            self.h_net3 = NEXT_STAGE_G(self.gf_dim // 2)
+            self.h_net3 = NEXT_STAGE_G(self.gf_dim // 2,extra=True)
             self.img_net3 = GET_IMAGE_G(self.gf_dim // 4)
         if cfg.TREE.BRANCH_NUM > 3: # Recommended structure (mainly limited by GPU memory), and not test yet
             self.h_net4 = NEXT_STAGE_G(self.gf_dim // 4, num_residual=1)

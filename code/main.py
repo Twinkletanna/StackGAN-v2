@@ -125,7 +125,7 @@ if __name__ == "__main__":
         from datasets import TextDataset
         dataset = TextDataset(cfg.DATA_DIR, split_dir,
                               base_size=cfg.TREE.BASE_SIZE,
-                              transform=image_transform)
+                              transform=image_transform,embedding_type = cfg.EMBEDDING_TYPE)
     assert dataset
     num_gpu = len(cfg.GPU_ID.split(','))
     dataloader = torch.utils.data.DataLoader(
