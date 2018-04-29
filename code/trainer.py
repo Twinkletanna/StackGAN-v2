@@ -113,9 +113,10 @@ def load_network(gpus):
     if cfg.TREE.BRANCH_NUM > 0:
         netsD.append(D_NET64())
     if cfg.TREE.BRANCH_NUM > 1:
-        netsD.append(D_NET128())
+        netsD.append(D_NET64())
     if cfg.TREE.BRANCH_NUM > 2:
-        netsD.append(D_NET256())
+        # pass
+        netsD.append(D_NET128())
     if cfg.TREE.BRANCH_NUM > 3:
         netsD.append(D_NET512())
     if cfg.TREE.BRANCH_NUM > 4:
@@ -268,15 +269,21 @@ class GANTrainer(object):
         criterion = self.criterion
 
         netD, optD = self.netsD[idx], self.optimizersD[idx]
-        real_imgs = self.real_imgs[idx]
+        if idx==0:
+            real_imgs = self.real_imgs[idx]
+        if idx>=1:
+            real_imgs=self.real_imgs[idx-1]
         fake_imgs = self.fake_imgs[idx]
         real_labels = self.real_labels[:batch_size]
         fake_labels = self.fake_labels[:batch_size]
         #
         netD.zero_grad()
+        print('in D train idx ',idx)
         #
         real_logits = netD(real_imgs)
+        print('real over idx ',idx)
         fake_logits = netD(fake_imgs.detach())
+        print('fake over idx,',idx)
         #
         errD_real = criterion(real_logits[0], real_labels)
         errD_fake = criterion(fake_logits[0], fake_labels)
@@ -568,7 +575,11 @@ class condGANTrainer(object):
 
         netD, optD = self.netsD[idx], self.optimizersD[idx]
         real_imgs = self.real_imgs[idx]
+        if idx>=1:
+            real_imgs = self.real_imgs[idx-1]
         wrong_imgs = self.wrong_imgs[idx]
+        if idx>=1:
+            wrong_imgs=self.wrong_imgs[idx-1]
         fake_imgs = self.fake_imgs[idx]
         #
         netD.zero_grad()
@@ -642,19 +653,19 @@ class condGANTrainer(object):
                     self.summary_writer.add_summary(sum_mu, count)
                     sum_cov = summary.scalar('G_like_cov2', like_cov2.data[0])
                     self.summary_writer.add_summary(sum_cov, count)
-            if self.num_Ds > 2:
-                mu1, covariance1 = compute_mean_covariance(self.fake_imgs[-2])
-                mu2, covariance2 = \
-                    compute_mean_covariance(self.fake_imgs[-3].detach())
-                like_mu1 = cfg.TRAIN.COEFF.COLOR_LOSS * nn.MSELoss()(mu1, mu2)
-                like_cov1 = cfg.TRAIN.COEFF.COLOR_LOSS * 5 * \
-                    nn.MSELoss()(covariance1, covariance2)
-                errG_total = errG_total + like_mu1 + like_cov1
-                if flag == 0:
-                    sum_mu = summary.scalar('G_like_mu1', like_mu1.data[0])
-                    self.summary_writer.add_summary(sum_mu, count)
-                    sum_cov = summary.scalar('G_like_cov1', like_cov1.data[0])
-                    self.summary_writer.add_summary(sum_cov, count)
+            # if self.num_Ds > 2:
+            #     mu1, covariance1 = compute_mean_covariance(self.fake_imgs[-2])
+            #     mu2, covariance2 = \
+            #         compute_mean_covariance(self.fake_imgs[-3].detach())
+            #     like_mu1 = cfg.TRAIN.COEFF.COLOR_LOSS * nn.MSELoss()(mu1, mu2)
+            #     like_cov1 = cfg.TRAIN.COEFF.COLOR_LOSS * 5 * \
+            #         nn.MSELoss()(covariance1, covariance2)
+            #     errG_total = errG_total + like_mu1 + like_cov1
+            #     if flag == 0:
+            #         sum_mu = summary.scalar('G_like_mu1', like_mu1.data[0])
+            #         self.summary_writer.add_summary(sum_mu, count)
+            #         sum_cov = summary.scalar('G_like_cov1', like_cov1.data[0])
+            #         self.summary_writer.add_summary(sum_cov, count)
 
         kl_loss = KL_loss(mu, logvar) * cfg.TRAIN.COEFF.KL
         errG_total = errG_total + kl_loss
@@ -721,6 +732,8 @@ class condGANTrainer(object):
                 ######################################################
                 errD_total = 0
                 for i in range(self.num_Ds):
+
+                    print('ith D net,count',i,count)
                     errD = self.train_Dnet(i, count)
                     errD_total += errD
 
@@ -897,3 +910,4 @@ class condGANTrainer(object):
                     #                       save_dir, split_dir, 128)
                     self.save_superimages(fake_img_list, filenames,
                                           save_dir, split_dir, 256)
+

@@ -188,10 +188,11 @@ def secondupBlock(in_planes, out_planes):
 
 
 class NEXT_STAGE_G(nn.Module):
-    def __init__(self, ngf, num_residual=cfg.GAN.R_NUM, extra=False):
+    def __init__(self, ngf, num_residual=cfg.GAN.R_NUM, extra=False,separate=False):
         super(NEXT_STAGE_G, self).__init__()
         self.gf_dim = ngf
         self.extra = extra
+        self.separate = separate
         if cfg.GAN.B_CONDITION:
             self.ef_dim = cfg.GAN.EMBEDDING_DIM
         else:
@@ -208,7 +209,8 @@ class NEXT_STAGE_G(nn.Module):
     def define_module(self):
         ngf = self.gf_dim
         efg = self.ef_dim
-
+        if(self.separate):
+            efg+= 64
         self.jointConv = Block3x3_relu(ngf + efg, ngf)
         self.residual = self._make_layer(ResBlock, ngf)
         self.upsample = upBlock(ngf, ngf // 2)
@@ -258,7 +260,7 @@ class G_NET(nn.Module):
             self.h_net1 = INIT_STAGE_G(self.gf_dim * 16)
             self.img_net1 = GET_IMAGE_G(self.gf_dim)
         if cfg.TREE.BRANCH_NUM > 1:
-            self.h_net2 = NEXT_STAGE_G(self.gf_dim)
+            self.h_net2 = NEXT_STAGE_G(self.gf_dim,separate=True)
             self.img_net2 = GET_IMAGE_G(self.gf_dim // 2)
         if cfg.TREE.BRANCH_NUM > 2:
             self.h_net3 = NEXT_STAGE_G(self.gf_dim // 2,extra=True)
@@ -277,16 +279,22 @@ class G_NET(nn.Module):
             c_code, mu, logvar = z_code, None, None
         fake_imgs = []
         if cfg.TREE.BRANCH_NUM > 0:
-            h_code1 = self.h_net1(z_code, c_code)
+            c_code_1 = torch.cat((c_code[:3][:],c_code[:3][:]),0)
+            h_code1 = self.h_net1(z_code, c_code_1)
             fake_img1 = self.img_net1(h_code1)
+            print('z size, h size, c size,0 :',z_code.size(),h_code1.size(),c_code[:3][:].size())
             fake_imgs.append(fake_img1)
         if cfg.TREE.BRANCH_NUM > 1:
-            h_code2 = self.h_net2(h_code1, c_code)
-            fake_img2 = self.img_net2(h_code2)
+            c_code_2 = torch.cat((c_code[3:][:],c_code[3:][:]),0)            
+            h_code2 = self.h_net1(z_code, c_code_2)
+            fake_img2 = self.img_net1(h_code2)
+            print('h size, c size,1 :',h_code2.size(),c_code_2.size())
             fake_imgs.append(fake_img2)
         if cfg.TREE.BRANCH_NUM > 2:
-            h_code3 = self.h_net3(h_code2, c_code)
-            fake_img3 = self.img_net3(h_code3)
+            hcode = torch.cat((h_code1,h_code2),1)
+            h_code3 = self.h_net2(hcode, c_code)
+            fake_img3 = self.img_net2(h_code3)
+            print('h size, c size,2 :',hcode.size(),c_code.size())
             fake_imgs.append(fake_img3)
         if cfg.TREE.BRANCH_NUM > 3:
             h_code4 = self.h_net4(h_code3, c_code)
@@ -368,6 +376,7 @@ class D_NET64(nn.Module):
             c_code = c_code.view(-1, self.ef_dim, 1, 1)
             c_code = c_code.repeat(1, 1, 4, 4)
             # state size (ngf+egf) x 4 x 4
+            print('D_NET64 x,c',x_code.size(),c_code.size())
             h_c_code = torch.cat((c_code, x_code), 1)
             # state size ngf x in_size x in_size
             h_c_code = self.jointConv(h_c_code)
@@ -596,3 +605,4 @@ class D_NET1024(nn.Module):
             return [output.view(-1), out_uncond.view(-1)]
         else:
             return [output.view(-1)]
+
