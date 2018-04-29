@@ -1,4 +1,4 @@
-CONFIG_NAME: '3stages_cnnrnn_work'
+CONFIG_NAME: '2stages_parallel'
 
 DATASET_NAME: 'birds'
 EMBEDDING_TYPE: 'cnn-rnn'

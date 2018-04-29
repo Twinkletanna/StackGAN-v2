@@ -278,12 +278,12 @@ class GANTrainer(object):
         fake_labels = self.fake_labels[:batch_size]
         #
         netD.zero_grad()
-        print('in D train idx ',idx)
+        # print('in D train idx ',idx)
         #
         real_logits = netD(real_imgs)
-        print('real over idx ',idx)
+        # print('real over idx ',idx)
         fake_logits = netD(fake_imgs.detach())
-        print('fake over idx,',idx)
+        # print('fake over idx,',idx)
         #
         errD_real = criterion(real_logits[0], real_labels)
         errD_fake = criterion(fake_logits[0], fake_labels)
@@ -733,7 +733,7 @@ class condGANTrainer(object):
                 errD_total = 0
                 for i in range(self.num_Ds):
 
-                    print('ith D net,count',i,count)
+                    # print('ith D net,count',i,count)
                     errD = self.train_Dnet(i, count)
                     errD_total += errD
 
